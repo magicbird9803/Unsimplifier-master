@@ -1,0 +1,8 @@
+.DS_Store
+node_modules
+/build
+/.svelte-kit
+/package
+
+.vs
+.vs/OrigamiWand/v16/.suo
