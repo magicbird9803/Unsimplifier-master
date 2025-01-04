@@ -21,11 +21,8 @@
 		"data_Mobj": DataType.Mobj,
 		"data_Aobj": DataType.Aobj,
 		"data_Bshape": DataType.Bshape,
-		"data_MapLink": DataType.Maplink,
 		"data_GobjRes": DataType.ResourceGobj,
 		"data_Effect": DataType.Effect,
-
-	
 		"MapId": DataType.MapId,
 		"data_ItemList": DataType.ItemList,
 		"data_character_npc": DataType.CharacterNpc,
@@ -33,19 +30,7 @@
 		"data_character_party": DataType.CharacterParty,
 		"data_character_item": DataType.CharacterItem,
 		"data_character_aobj": DataType.CharacterAobj,
-
-		"data_model_npc": DataType.DataNpcModel,
-		"data_model_gobj": DataType.DataGobjModel,
-		"data_model_mobj": DataType.DataMobjModel,
-		"data_model_player": DataType.DataPlayerModel,
-		"data_model_item": DataType.DataItemModel,
-
 		"data_effect": DataType.DataEffect,
-		"data_mapLinkZoom": DataType.DataMaplinkZoom,
-		"data_ui": DataType.DataUi,
-
-
-
 	}
 	
 	onMount(() => {
@@ -90,10 +75,9 @@
 		<option value="Item">Item Placement (data_Item)</option>
 		<option value="Mobj">Mobj Placement (data_Mobj)</option>
 		<option value="Aobj">Aobj Placement (data_Aobj)</option>
-		<option value="ResourceGobj">Gobj Placement (data_Gobj)</option>
 		<option value="Bshape">Bshape Placement (data_Bshape)</option>
-		<option value="Maplink">Room Placement (data_MapLink)</option>
 		<option value="Effect">Particle Effect Placement (data_Effect)</option>
+		<option value="ResourceGobj">Gobj Placement (data_Gobj)</option>
 
 		
 		<option value="CharacterNpc">NPC Registry (data_character_npc)</option>
@@ -101,19 +85,11 @@
 		<option value="CharacterParty">Partner Registry (data_character_party)</option>
 		<option value="CharacterItem">Item Registry (data_character_item)</option>
 		<option value="CharacterAobj">Aobj Registry (data_character_aobj)</option>
+		<option value="DataEffect">Particle Effect Registry (data_effect)</option>
 
-		<option value="DataGobjModel">Gobj Model Registry (data_model_gobj)</option>
-		<option value="DataNpcModel">NPC Model Registry (data_model_npc)</option>
-		<option value="DataMobjModel">Mobj Model Registry (data_model_mobj)</option>
-		<option value="DataPlayerModel">Partner Model Registry (data_model_player)</option>
-		<option value="DataItemModel">Item Model Registry (data_model_item)</option>
-
+		
 		<option value="MapId">Map Registry (MapId)</option>
 		<option value="ItemList">Battle Item RNG Table (ItemList)</option>
-
-		<option value="DataEffect">Particle Effect Registry (data_effect)</option>
-		<option value="DataMaplinkZoom">data_mapLinkZoom</option>
-		<option value="DataUi">User Interface Registry (data_ui)</option>		
 	</select>
 	
 	<div class="checkbox" style="margin-top: 0.3rem;">

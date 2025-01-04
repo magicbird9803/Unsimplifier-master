@@ -100,21 +100,15 @@ type TypeDefinition = {
 
 interface DataTypeMetadata {
 	parent?: DataType
-
+	
 	displayName?: string
 	identifyingField?: string
-	nestedAllValues?: boolean
 	dataDivision?: DataDivision | null
 	textVars?: {[key: string]: string}
 	
 	defaultPadding?: number
 	
 	childTypes?: Typedef<DataType>,
-	childFieldLabel?: string
-	childField?: string
-	countSymbol?: string
-
-
 	
 	// for future sub-types
 	// childField
@@ -123,289 +117,6 @@ interface DataTypeMetadata {
 }
 
 const typedefs = {
-
-	[DataType.DataUi]: {},
-	
-	[DataType.UiModel]: {
-		__: {
-			displayName: "Model",
-			dataDivision: dataDivisions.model,
-			childTypes: {
-				properties: DataType.UiModelProperty,
-			},
-		},
-		id: "string",
-		modelFolder: "string",
-		modelFileName: new Property("string", `
-Not sure what this is for. It seems like it's the same as \`id\`.`),
-		properties: new Property("symbol", undefined, {tabName: "Model Properties of {id}"}),
-		propertyCount: new Property("int", undefined, {hidden: true}),
-		field_0x24: "int",
-	},
-	
-	[DataType.UiModelProperty]: {
-		__: {
-			displayName: "Model Property",
-			dataDivision: dataDivisions.modelProperty,
-			nestedAllValues: true,
-		
-		},	
-		id: "string",
-		model: "string",
-		field_0x10: "string",
-		field_0x18: "int",
-		field_0x1c: "int",
-		field_0x20: "float",
-		field_0x24: "int",
-		field_0x28: "string",
-		field_0x30: "string",
-		field_0x38: "int",
-		field_0x3c: "int",
-	},
-	
-	[DataType.UiMsg]: {
-		__: {
-
-			displayName: "Message",
-			dataDivision: dataDivisions.msg,
-		},	
-		
-		id: "string",
-		modelAsset: "string",
-		field_0x10: "string",
-		field_0x18: "string",
-		field_0x20: "string",
-		openSfx: "string",
-		closeSfx: "string",
-		field_0x38: "float",
-		field_0x3c: "float",
-		field_0x40: "float",
-		field_0x44: "float",
-		field_0x48: "float",
-		field_0x4c: "float",
-		field_0x50: "float",
-		field_0x54: "int",
-		field_0x58: "string",
-		field_0x5c: "int",
-		field_0x60: "int",
-		field_0x64: "int",
-		field_0x68: "int",
-		field_0x6c: "int",
-		field_0x70: "string",
-		field_0x78: "int",
-		field_0x7c: "int",
-	},
-	
-	[DataType.UiShop]: {
-		__: {
-
-			displayName: "Shop",
-			dataDivision: dataDivisions.shop,
-			childTypes: {
-				soldItems: DataType.UiSellItem,
-			},
-		},
-
-		id: "string",
-		soldItems: new Property("symbol", undefined, {tabName: "Sold Items of {id}"}),
-		soldItemCount: new Property("int", undefined, {hidden: true}),
-		field_0x14: "int",
-	},
-	
-	[DataType.UiSellItem]: {
-		__: {
-
-			displayName: "Sold Item",
-			dataDivision: dataDivisions.sellItem,
-			nestedAllValues: true,
-		},
-
-		id: "string",
-		itemGiven: "string",
-		quantityGiven: "int",
-		field_0x14: "int",
-		field_0x18: "int",
-		field_0x1c: "int",
-		field_0x20: "int",
-		field_0x24: "int",
-		availabilityEvent: new Property("string", `
-The name of the event function that needs to be triggered before this item shows up in the shop.`),
-		field_0x30: "string",
-		field_0x38: "string",
-		field_0x40: "string",
-		field_0x48: "int",
-		field_0x4c: "int",
-		placementBone: new Property("string", `
-The name of the bone on the map model's skeleton that the item will be tied to. This is how items are shown in shops.`),
-		field_0x58: "int",
-		field_0x5c: "int",
-		field_0x60: "int",
-		rowOrder: new Property("int", `
-The order in which items can be selected in a row starting from 0, 1, 2 etc.`),
-		columnOrder: new Property("int", `
-The order in which items can be selected in a column starting from 0, 1, 2 etc.`),
-		field_0x6c: "int",
-	},
-		
-	[DataType.UiMenu]: {
-		__: {
-
-			displayName: "Menu",
-			dataDivision: dataDivisions.menu,
-		},
-
-		stage: "string",
-		id: "string",
-		field_0x10: "string",
-		field_0x18: "int",
-		field_0x1c: "int",
-		field_0x20: "string",
-		field_0x28: "string",
-		field_0x30: "string",
-		field_0x38: "string",
-		field_0x40: "string",
-		field_0x48: "string",
-		field_0x50: "string",
-		field_0x58: "string",
-		field_0x60: "string",
-		field_0x68: "string",
-		field_0x70: "string",
-		field_0x78: "string",
-		field_0x80: "string",
-		field_0x88: "string",
-		field_0x90: "string",
-		field_0x98: "string",
-		field_0xa0: "string",
-		field_0xa8: "string",
-		field_0xb0: "string",
-		field_0xb8: "string",
-		field_0xc0: "string",
-		field_0xc8: "string",
-		field_0xd0: "string",
-		field_0xd8: "string",
-		field_0xe0: "string",
-		field_0xe8: "string",
-		field_0xf0: "string",
-		field_0xf8: "string",
-		field_0x100: "string",
-		field_0x108: "string",
-		field_0x110: "string",
-		field_0x118: "string",
-		field_0x120: "string",
-		field_0x128: "string",
-		field_0x130: "string",
-		field_0x138: "string",
-		field_0x140: "string",
-		field_0x148: "string",
-		field_0x150: "string",
-		field_0x158: "string",
-		field_0x160: "string",
-		field_0x168: "string",
-		field_0x170: "string",
-		field_0x178: "string",
-	},
-
-	[DataType.modelDataType]: {
-		__: {
-			displayName: "ModelDataRegistry",
-		},
-		
-		stage: "string",
-		id: "string",
-		type: "string",
-		position: "Vector3",
-		rotationDegrees: "float",
-		field_0x28: new Property("bool8", "Unsure what this field is."),
-		isInvisibleOnLoad: new Property("bool8", "Flag that sets an NPC as invisible until activated by scripted event."),
-		isEnemy: new Property("bool8", "Flag that sets an NPC as an Enemy"),
-		field_0x2b: "byte",
-		field_0x2c: "int",
-		enemyEncounterId: "string",
-		field_0x38: "int",
-		field_0x3c: "int",
-		associatedHouse: new Property("string", "ID of the house the NPC is in? null if it is not in a house"),
-		associatedFlag: new Property("string", "Global Saved Work Flag (GSWF) associated to this NPC, purpose?"),
-		field_0x50: "bool32",
-		field_0x54: "int",
-		formation0Id: "string",
-		formation0Weight: "int",
-		field_0x64: "bool32",
-		formation1Id: "string",
-		formation1Weight: "int",
-		field_0x74: "bool32",
-		formation2Id: "string",
-		formation2Weight: "int",
-		field_0x84: "bool32",
-		formation3Id: "string",
-		formation3Weight: "int",
-		field_0x94: "bool32",
-		field_0x98: "int",
-		field_0x9c: "int",
-		field_0xa0: "int",
-		field_0xa4: "int",
-		field_0xa8: "int",
-		field_0xac: "float",
-		field_0xb0: "float",
-		field_0xb4: "float",
-		field_0xb8: "float",
-		field_0xbc: "float",
-		walkOrigin: "Vector3",
-		walkRadius: "Vector3",
-		field_0xd8: "float",
-		field_0xdc: "int",
-		chaseOrigin: "Vector3",
-		chaseRadius: "Vector3",
-		field_0xf8: "int",
-		field_0xfc: "int",
-		field_0x100: new Property("string", "References stage name again, purpose?"),
-		field_0x108: "int",
-		field_0x10c: "int",
-		field_0x110: "int",
-		field_0x114: "int",
-		field_0x118: "string",
-		field_0x120: "int",
-		field_0x124: "int",
-		initFunction: new Property("string", "Function that runs when NPC is initialized."),
-		field_0x130: "int",
-		field_0x134: "int",
-		field_0x138: "int",
-		field_0x13c: "int",
-		talkFunction: new Property("string", "Function that runs when NPC is talked to."),
-		field_0x148: "int",
-		field_0x14c: "int",
-		field_0x150: "int",
-		field_0x154: "int",
-		field_0x158: "int",
-		field_0x15c: "int",
-		tattleEntry: new Property("string", "Tattle Entry used when Goombella tattles this NPC."),
-		field_0x168: "int",
-		field_0x16c: "int",
-		field_0x170: "int",
-		field_0x174: "int",
-		field_0x178: "int",
-		field_0x17c: "int",
-	},
-
-	[DataType.DataMaplinkZoom]: {
-		__: {
-
-		displayName: "Maplink Zoom",
-		},
-
-		id: "string",
-		field_0x8: "int",
-		field_0xc: "int",
-		field_0x10: "int",
-		field_0x14: "float",
-		field_0x18: "string",
-		field_0x20: "int",
-		field_0x24: "int",
-		field_0x28: "float",
-		field_0x2c: "int",
-		field_0x30: "float",
-		field_0x34: "float",
-	},
-
 	[DataType.Npc]: {
 		__: {
 			displayName: "NPC",
@@ -617,84 +328,6 @@ The order in which items can be selected in a column starting from 0, 1, 2 etc.`
 		field_0x48: "int",
 		field_0x4c: "int",
 	},
-	[DataType.MaplinkHeader]: {
-		__: {
-			displayName: "Maplink Header",
-		},
-		
-		stage: "string",
-		linkAmount: new Property("int", undefined, { hidden: true }),
-		field_0xc: "int",
-		maplinks: new Property("symbol", undefined, { hidden: true }),
-		field_0x18: "int",
-		field_0x1c: "int",
-		field_0x20: "int",
-		field_0x24: "int",
-		field_0x28: "int",
-		field_0x2c: "int",
-	},
-	[DataType.Maplink]: {
-		__:{
-			dataDivision: dataDivisions.maplinkNodes,
-			displayName: "Link",
-		},		
-		
-		stage: "string",
-		id: "string",
-		destinationStage: "string",
-		destinationId: "string",
-		shape: "string",
-		target: new Property("string", `
-Type type of the link. Possible values:
-
-* マリオ = (Mario)
-*
-`),		
-		type: new Property("string", `
-Type type of the link. Possible values:
-
-* ベロ = Bero (Walk-Off Exit)
-*ドア = Door 
-* 土管：下 = Pipe: Under (Pipe is under you)
-*
-`),
-		objectId: new Property("string", `This is for linking a map exit to a Mobj, BShape, or map collision`),
-		rotationDegrees: "float",
-		field_0x44: "int",
-		field_0x48: "string",
-		field_0x50: "int",
-		field_0x54: "int",
-		field_0x58: "string",
-		field_0x60: "int",
-		field_0x64: "int",
-		field_0x68: "string",
-		saveOnExit: "int",
-		field_0x70: "int",
-		direction: new Property("string", `
-			The direction in which the link is facing. Possible values, among others:
-			
-			* 右後ろ - right back
-			* 右 - right
-			* 左 - left
-			* Possibly more.`),			
-		field_0x84: "int",
-		field_0x88: "int",
-		field_0x8c: "int",
-		field_0x90: "int",
-		field_0x94: "int",
-		field_0x98: "int",
-		field_0x9c: "int",
-		field_0xa0: "int",
-		field_0xa4: "int",
-		enterFunction: new Property("string", `Either the function called when entering a stage, or entering a transition. Please check.\
-\n\n${scriptDisclaimer}`),
-		exitFunction: new Property("string", `Either the function called when exiting a stage, or exiting a transition. Please check.\
-\n\n${scriptDisclaimer}`),
-		field_0xb8: "int",
-		field_0xbc: "int",
-		field_0xc0: "int",
-		field_0xc4: "int",
-	},	
 	[DataType.MapId]: {
 		__: {
 			displayName: "Map",
@@ -737,96 +370,6 @@ Used for the loading of new maps (?)`),
 		field_0x88: new Property("string", "Only used by the first 5 out of 6 `jon` maps and points ot `jon_00` there"),
 		field_0x90: new Property("string", "Only used by the first 5 out of 6 `jon` maps and points ot `jon_00` there"),
 	},
-
-	[DataType.ModelAssetGroup]: {
-		__: {
-		displayName: "Asset Group",
-		identifyingField: "fileName",
-		nestedAllValues: true,
-		dataDivision: dataDivisions.assetGroup,
-			},
-		
-		modelFolder: "string",
-		fileName: "string",
-		field_0x10: "string",
-		field_0x18: "int",
-		field_0x1c: "int",
-		field_0x20: "int",
-		field_0x24: "int",
-	},
-	[DataType.ModelState]: {
-		__: {
-		displayName: "State",
-		identifyingField: "description",
-		childFieldLabel: "faceArrays",
-		childField: "substates",
-		nestedAllValues: true,
-		dataDivision: dataDivisions.state,
-		childTypes: {
-			substates: DataType.ModelFaceGroup,
-		},
-	},		
-		description: new Property("string", `
-Description of the state, which doesn't seem to have an effect on its behavior.
-Some commonly found translations:
-
-* 通常 = normal
-* ダメージ = damage
-* 変形 = deformation/variation
-`),
-		substates: new Property("symbolAddr", undefined, {hidden: true}),
-		substateCount: new Property("int", undefined, {hidden: true}),
-		field_0x14: new Property("int", undefined, {hidden: true}),
-	},
-	
-	[DataType.ModelFaceGroup]: {
-		__: {
-		displayName: "Face Array",
-		nestedAllValues: true,
-		dataDivision: dataDivisions.subState,
-		childTypes: {
-			faces: DataType.ModelFace,
-		},
-	},		
-
-		
-		field_0x0: "int",
-		field_0x4: "int",
-		faces: new Property("symbolAddr", undefined, {hidden: true}),
-		faceCount: new Property("int", undefined, {hidden: true}),
-		field_0x14: "int",
-	},
-	
-	[DataType.ModelFace]: {
-		__: {
-		displayName: "Face",
-		childField: "animations",
-		nestedAllValues: true,
-		dataDivision: dataDivisions.face,
-		childTypes: {
-			animations: DataType.ModelAnimation,
-		},
-	},
-
-		
-		field_0x0: "int",
-		field_0x4: "int",
-		// internally also called "anime"
-		animations: new Property("symbolAddr", undefined, {hidden: true}),
-		animationCount: new Property("int", undefined, {hidden: true}),
-		field_0x14: "int",
-	},
-	
-	[DataType.ModelAnimation]: {
-		__: {
-		displayName: "Animation",
-		nestedAllValues: true,
-		dataDivision: dataDivisions.anime,
-	},
-		description: "string",
-		id: "string",
-
-	},
 	[DataType.ItemList]: {
 		__: {
 			displayName: "Item Table",
@@ -849,48 +392,6 @@ Some commonly found translations:
 		holdWeight: "int",
 		dropWeight: "int",
 	},
-	[DataType.DataGobjModel]: {
-		__: {
-
-			displayName: "Gobj Model",
-			countSymbol: "wld::fld::data::modelGobj_num",
-			parent: DataType.modelDataType,
-			childTypes: {
-				assetGroups: DataType.ModelAssetGroup,
-				states: DataType.ModelState,
-			},
-		},
-		
-	},
-	[DataType.DataNpcModel]: {
-		__: {
-
-			displayName: "NPC Model",
-			countSymbol: "wld::fld::data::modelNpc_num",
-			parent: DataType.modelDataType,
-			childTypes: {
-				assetGroups: DataType.ModelAssetGroup,
-				states: DataType.ModelState,
-			},
-		},
-		
-	},	
-	[DataType.DataMobjModel]: {
-		__: {
-
-			displayName: "Mobj Model",
-			countSymbol: "wld::fld::data::modelMobj_num",
-			parent: DataType.modelDataType,
-
-			childTypes: {
-				assetGroups: DataType.ModelAssetGroup,
-				states: DataType.ModelState,
-			},
-		},
-
-	},
-
-
 	[DataType.Gobj]: {
 		stage: "string",
 		id: "string",
@@ -975,6 +476,11 @@ might be the interaction function (called when pressing A; similar to talking).`
 		field_0x94: "int",
 	},
 	[DataType.Effect]: {
+		__: {
+
+			displayName: "Effect",
+		},
+
 		stage: "string",
 		id: "string",
 		type: "string",
@@ -984,10 +490,9 @@ might be the interaction function (called when pressing A; similar to talking).`
 		field_0x2c: "int",
 		field_0x30: "float",
 		field_0x34: "int",
-		field_0x38: "int",
-		field_0x3c: "int",
-		field_0x40: "int",
-		field_0x44: "int",
+		field_0x38: "string",
+		field_0x40: "string",
+		field_0x44: "string",
 	},		
 	[DataType.CharacterNpc]: {
 		__: {
@@ -1064,9 +569,6 @@ The effect emitter set used when the character lands from a jump.`),
 		__: {
 			displayName: "Mobj Definition",
 			defaultPadding: 1,
-			textVars: {
-				model: 'data_model_mobj'
-			},
 		},
 		
 		id: "string",
@@ -1206,6 +708,7 @@ Specifies the type of the item. Possible values:
 	},
 } as const satisfies {[dataType: number]: TypeDefinition}
 
+
 function mapObject<A, B>(obj: {[key: string]: A}, fn: (value: [string, A], index: number) => [string, B]): {[key: string]: B} {
 	return Object.fromEntries(Object.entries(obj).map(fn))
 }
@@ -1214,7 +717,6 @@ function filterObject<A>(obj: {[key: string]: A}, fn: (value: [string, A], index
 }
 
 interface FileTypeRegistry {
-	parent?: DataType
 	typedef: Typedef<PropertyType>
 	metadata: Typedef<Property>
 	fieldOffsets: Typedef<number> & {[offset: number]: string}
@@ -1224,14 +726,15 @@ interface FileTypeRegistry {
 	dataDivision: DataDivision
 	defaultPadding: number
 	textVars: {[key: string]: string}
-
+	
+	// for future sub-types
 	childTypes?: Typedef<DataType>
 	childFieldLabel?: string
 	childField?: string
 	countSymbol?: string
 	nestedAllValues?: boolean
 	entryPoints?: {[objectType: number]: any}
-
+	
 	instantiate(): object
 }
 
@@ -1242,8 +745,7 @@ export const FILE_TYPES = mapObject(typedefs, ([dataTypeString, typedef]) => [da
 
 console.timeEnd('generating FILE_TYPES')
 
-function generateTypedefFor(dataType: DataType, typedef: TypeDefinition, extendedTypedef: Typedef<any>): FileTypeRegistry {
-
+function generateTypedefFor(dataType: DataType, typedef: TypeDefinition): FileTypeRegistry {
 	let metadata: DataTypeMetadata = {...typedef.__}
 	
 	while (metadata.parent) {
@@ -1307,17 +809,12 @@ function generateTypedefFor(dataType: DataType, typedef: TypeDefinition, extende
 		
 		displayName,
 		identifyingField: identifyingField ?? "id",
-		nestedAllValues:  typedef.nestedAllValues as unknown as boolean ?? false,
 		dataDivision: dataDivision === null ? null : dataDivision ?? dataDivisions.main,
 		textVars: textVars ?? {},
 		
 		defaultPadding: defaultPadding ?? 0,
 		
 		childTypes: childTypes ?? {},
-
-		childFieldLabel: typedef.childFieldLabel as string ?? undefined,
-
-		entryPoints: typedef.entryPoints as any,
 		
 		// for future sub-types
 		// childField: typedef.__childField as string | undefined,
@@ -1326,7 +823,7 @@ function generateTypedefFor(dataType: DataType, typedef: TypeDefinition, extende
 		
 		instantiate(): object {
 			let result = {}
-			result[VALUE_UUID] = ValueUuid()
+			result[VALUE_UUID] = ValueUuid('instantiate()')
 			result[DATA_TYPE] = dataType
 			
 			for (const [fieldName, type] of Object.entries(fieldTypes)) {

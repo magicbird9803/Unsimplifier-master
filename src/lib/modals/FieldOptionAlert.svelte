@@ -18,7 +18,6 @@
 	export let title: string
 	
 	$: fieldType = FILE_TYPES[dataType].typedef[fieldName]
-	$: nestedAllValues = FILE_TYPES[dataType].nestedAllValues
 	$: allGlobalValues = FILE_TYPES[dataType].dataDivision == null && scanAllGlobalValues()
 	$: hideNulls = fieldType === "string"
 	
@@ -65,7 +64,7 @@
 	}
 </script>
 
-<TabbedAlert title={title} selectedIndex={0} tabNames={nestedAllValues 
+<TabbedAlert title={title} selectedIndex={0} tabNames={allGlobalValues 
 		? ["General Information", "All Local Values", "All Global Values"]
 		: ["General Information", "All Values"]}>
 	<div class="info">

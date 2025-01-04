@@ -3,7 +3,6 @@ import { DataType } from "./dataType";
 import { FILE_TYPES } from "./fileTypes";
 import type { Instance } from "./fileTypes";
 import { BinaryReader, Vector3 } from "./misc";
-import { demangle, mangleIdentifier } from "./nameMangling";
 import { Relocation, Section, Symbol } from "./types";
 import { ValueUuid, VALUE_UUID, DATA_TYPE, type UuidTagged } from "./valueIdentifier";
 import { peekable, type Peekable } from "./util";
@@ -120,187 +119,12 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 	
 	let data: {[division in DataDivision]?: any[]}
 	
-	// Parses the .rodata section from a data_x_model file, since these are always the same and can be reused
-	interface RawModelInstance {
-		id: string
-		assetGroups: Pointer
-		assetGroupCount: number
-		states: Pointer
-		stateCount: number
-	}
-	
-	interface ModelInstance {
-		assetGroups: { symbolName: string, children: Instance<DataType.ModelAssetGroup>[] }
-		assetGroupCount: number
-		states: { symbolName: string, children: Instance<DataType.ModelState>[] }
-		stateCount: number
-	}
-	
-	function parseModelRodata(data: {[division in DataDivision]?: any[]}, models: RawModelInstance[]) {
-		const rodataSection = findSection('.rodata')
-		const stringSection = findSection('.rodata.str1.1')
-		
-		// TODO: this could be significantly cleaned up with symbolAddr
-		
-		// asset groups
-		let allAssetGroups = []
-		
-		for (const model of models) {
-			const { assetGroups: offset, assetGroupCount } = model
-			
-			if (offset == undefined || offset == Pointer.NULL) {
-				model.assetGroups = null
-				continue
-			}
-			
-			let children = applyStrings(
-				offset, DataType.ModelAssetGroup, stringSection, 
-				allRelocations.get('.rodata'), symbolTable,
-				
-				parseRawDataSection(rodataSection, assetGroupCount, offset, DataType.ModelAssetGroup), 
-			)
-			
-			let symbol = findSymbolAt(rodataSection, offset) ?? createMissingSymbol(`wld::btl::data::^${model.id}_model_files`, rodataSection)
-			
-			let assetGroupObj = {
-				symbolName: demangle(symbol.name),
-				children,
-			}
-			
-			allAssetGroups.push(assetGroupObj);
-			(model as unknown as ModelInstance).assetGroups = assetGroupObj
-		}
-		
-		data.assetGroup = allAssetGroups
-		
-		// states
-		let allStates = []
-		let allFaceGroups = []
-		let allFaces = []
-		let allAnimations = []
-		
-		for (const model of models) {
-			const { states: offset, stateCount } = model
-			
-			if (offset == undefined || offset == Pointer.NULL) {
-				model.states = null
-				continue
-			}
-			
-			let states = applyStrings(
-				offset, DataType.ModelState, stringSection, 
-				allRelocations.get('.rodata'), symbolTable,
-				
-				parseRawDataSection(rodataSection, stateCount, offset, DataType.ModelState), 
-			)
-			
-			let symbol = findSymbolAt(rodataSection, offset) ?? createMissingSymbol(`wld::btl::data::^${model.id}_state`, rodataSection)
-			
-			let stateObj = {
-				symbolName: demangle(symbol.name),
-				children: states,
-			}
-			
-			allStates.push(stateObj);
-			(model as unknown as ModelInstance).states = stateObj
-			
-			// faceGroups
-			for (const state of states) {
-				const { substates: offset, substateCount } = state
-				
-				if (offset == undefined || offset == Pointer.NULL) {
-					state.substates = null
-					continue
-				}
-				
-				let faceGroups = applyStrings(
-					offset, DataType.ModelFaceGroup, stringSection, 
-					allRelocations.get('.rodata'), symbolTable,
-					
-					parseRawDataSection(rodataSection, substateCount, offset, DataType.ModelFaceGroup), 
-				)
-				
-				let symbol = findSymbolAt(rodataSection, offset)
-					?? createMissingSymbol(`wld::btl::data::^${model.id}_${Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)}`, rodataSection)
-				
-				let faceGroupObj = {
-					symbolName: demangle(symbol.name),
-					children: faceGroups,
-				}
-				
-				allFaceGroups.push(faceGroupObj);
-				state.substates = faceGroupObj
-				
-				// faces
-				for (const faceGroup of faceGroups) {
-					const { faces: offset, faceCount } = faceGroup
-					
-					if (offset == undefined || offset == Pointer.NULL) {
-						faceGroup.faces = null
-						continue
-					}
-					
-					let faces = applyStrings(
-						offset, DataType.ModelFace, stringSection, 
-						allRelocations.get('.rodata'), symbolTable,
-						
-						parseRawDataSection(rodataSection, faceCount, offset, DataType.ModelFace), 
-					)
-					
-					let symbol = findSymbolAt(rodataSection, offset)
-						?? createMissingSymbol(`wld::btl::data::^${model.id}_${Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)}`, rodataSection)
-					
-					let faceObj = {
-						symbolName: demangle(symbol.name),
-						children: faces,
-					}
-					
-					allFaces.push(faceObj);
-					faceGroup.faces = faceObj
-					
-					// animations
-					for (const face of faces) {
-						const { animations: offset, animationCount } = face
-						
-						if (offset == undefined || offset == Pointer.NULL) {
-							face.animations = null
-							continue
-						}
-						
-						let animations = applyStrings(
-							offset, DataType.ModelAnimation, stringSection, 
-							allRelocations.get('.rodata'), symbolTable,
-							
-							parseRawDataSection(rodataSection, animationCount, offset, DataType.ModelAnimation), 
-						)
-						
-						let symbol = findSymbolAt(rodataSection, offset)
-							?? createMissingSymbol(`wld::btl::data::^${model.id}_${Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)}`, rodataSection)
-					
-						let animationObj = {
-							symbolName: demangle(symbol.name),
-							children: animations,
-						}
-						
-						allAnimations.push(animationObj);
-						face.animations = animationObj
-					}
-				}
-			}
-		}
-		
-		data.anime = allAnimations
-		data.face = allFaces
-		data.subState = allFaceGroups
-		data.state = allStates
-	}
 	function findSection(sectionName: string): Section {
 		return sections.find(section => section.name == sectionName)
 	}
 	
 	function findSymbol(name: string): Symbol {
-		let mangledName = mangleIdentifier(name)
-		return symbolTable.find(symbol => symbol.name === mangledName)
+		return symbolTable.find(symbol => symbol.name === name)
 	}
 	
 	function findSymbolAt(section: Section, location: Pointer) {
@@ -311,7 +135,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 		let symbol = new Symbol()
 		
 		// TODO: these values are only verified to be correct for data_btl's models
-		symbol.name = mangleIdentifier(name)
+		symbol.name = name
 		symbol.sectionHeaderIndex = sections.indexOf(section)
 		symbol.info = 1
 		symbol.visibility = 0
@@ -325,7 +149,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 		symbolTable.push(symbol)
 		return symbol
 	}
-		
+	
 	// parse data according to data type
 	switch (dataType) {
 		case DataType.None:
@@ -345,62 +169,6 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			
 			data = {}
 			data.main = parseSymbol(dataSection, stringSection, mainSymbol, DataType.MapId, { count })
-			
-			break
-		}
-
-		case DataType.Maplink: {
-			const dataSection = findSection('.data')
-			const dataStringSection = findSection('.rodata.str1.1')
-			
-			data = {}
-			
-			let headerSymbol = findSymbol("wld::fld::data::maplink::s_mapLink")
-			let header = parseSymbol(dataSection, dataStringSection, headerSymbol, DataType.MaplinkHeader, 1)
-			data.main = header
-			
-			// maplink nodes
-			let { maplinks: symbolName, linkAmount } = header[0]
-			let maplinkSymbol = findSymbol(symbolName)
-			let maplinks = parseSymbol(dataSection, dataStringSection, maplinkSymbol, DataType.Maplink, linkAmount)
-			
-			let maplinkObj = {
-				symbolName,
-				children: maplinks,
-			}
-			
-			data.maplinkNodes = maplinks
-			header[0].maplinks = maplinkObj
-			
-			break
-		}
-		
-		case DataType.DataNpcModel:
-		case DataType.DataItemModel:
-		case DataType.DataGobjModel:
-		case DataType.DataMobjModel:
-		case DataType.DataPlayerModel:
-		{
-			const dataSection = findSection('.data')
-			const rodataSection = findSection('.rodata')
-			const dataStringSection = findSection('.rodata.str1.1')
-			
-			let rodataView = new DataView(rodataSection.content)
-			
-			// object count in .data is stored somewhere in .rodata, at symbol wld::fld::data::modelNpc_num
-			// because of name mangling, this equals _ZN3wld3fld4dataL12modelNpc_numE
-			let countSymbol = findSymbol(FILE_TYPES[dataType].countSymbol)
-			const dataCount = Number(rodataView.getBigInt64(countSymbol.location.value, true))
-			
-			data = {}
-			data.main = applyStrings(
-				Pointer.ZERO, dataType, dataStringSection, 
-				allRelocations.get('.data'), symbolTable,
-				
-				parseRawDataSection(dataSection, dataCount, 0, dataType), 
-			)
-			
-			parseModelRodata(data, data.main)
 			
 			break
 		}
@@ -482,12 +250,16 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 	console.log('data', data)
 	
 	return binary
-
-
+	
+	
 	interface ParseSymbolProps {
+		count?: number
+		relocations?: Peekable<[number, Relocation]>
 	}
 	
-	function parseSymbol<T extends DataType>(section: Section, stringSection: Section, symbol: Symbol, dataType?: T, properties?: ParseSymbolProps, count?: number, relocations?: Peekable<[number, Relocation]>) {		
+	function parseSymbol<T extends DataType>(section: Section, stringSection: Section, symbol: Symbol, dataType: T, properties?: ParseSymbolProps) {
+		let { count, relocations } = properties
+		
 		// if count is smaller than zero, calculate size like normal and subtract negative value from it
 		let subtract = 0
 		
@@ -495,7 +267,6 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			subtract = Math.abs(count)
 			count = undefined
 		}
-
 		
 		count = count ?? symbol.size / FILE_TYPES[dataType].size - subtract
 		
@@ -521,7 +292,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			let obj = objFromReader(reader, dataType) as Instance<T>
 			applyRelocations(obj, offset, relocations, symbolTable, stringSection, dataType, allowSkippingRelocations)
 			
-			obj[VALUE_UUID] = ValueUuid()
+			obj[VALUE_UUID] = ValueUuid(DataType[dataType] + " " + obj[FILE_TYPES[dataType].identifyingField])
 			
 			result.push(obj)
 		}
@@ -529,140 +300,6 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 		reader.position = initialReaderPosition
 		return result
 	}
-}
-
-function parseRawDataSection(section: Section, count: number, initialPosition: number | Pointer, dataType: DataType): UuidTagged[] {
-	const reader = new BinaryReader(section.content)
-	
-	reader.position = initialPosition instanceof Pointer ? initialPosition.value : initialPosition
-	
-	let result = []
-	let i = 0
-	
-	while (reader.position < section.content.byteLength && i < count) {
-		result.push(objFromReader(reader, dataType))
-		i += 1
-	}
-	
-	return result
-	
-	function objFromReader(reader: BinaryReader, dataType: DataType): UuidTagged {
-		let result: UuidTagged = {
-				[VALUE_UUID]: ValueUuid(), 
-				[DATA_TYPE]: dataType
-			}
-		
-		for (const [fieldName, fieldType] of Object.entries(FILE_TYPES[dataType].typedef)) {
-			
-			switch (fieldType) {
-				case "string":
-					result[fieldName] = null
-					reader.position += 8
-					break
-				case "symbol":
-					result[fieldName] = null
-					reader.position += 8
-					break
-				case "symbolAddr":
-					result[fieldName] = null
-					reader.position += 8
-					break
-				case "Vector3":
-					result[fieldName] = new Vector3(reader.readFloat32(), reader.readFloat32(), reader.readFloat32())
-					break
-				case "float":
-					result[fieldName] = reader.readFloat32()
-					break
-				case "double":
-					result[fieldName] = reader.readFloat64()
-					break
-				case "byte":
-					result[fieldName] = reader.readUint8()
-					break
-				case "bool8":
-					result[fieldName] = !!reader.readUint8()
-					break
-				case "bool32":
-					result[fieldName] = !!reader.readUint32()
-					break
-				case "short":
-					result[fieldName] = reader.readInt16()
-					break
-				case "int":
-					result[fieldName] = reader.readInt32()
-					break
-				case "long":
-					result[fieldName] = Number(reader.readBigInt64())
-					break
-				
-				default:
-					throw new Error(`Unknown data type ${JSON.stringify(fieldType)}`)
-			}
-			
-		}
-		
-		return result
-	}
-}
-
-function applyStrings<T extends DataType>(baseOffsetPointer: Pointer, dataType: T, stringSection: Section, 
-	relocationTable: Map<number, Relocation>, symbolTable: Symbol[], objects: UuidTagged[]): Instance<T>[] {
-	
-	let result = []
-	
-	const baseOffset = baseOffsetPointer.value
-	
-	for (const [offset, relocation] of relocationTable) {
-		if (offset >= baseOffset && offset < baseOffset + FILE_TYPES[dataType].size * objects.length) {
-			let size = FILE_TYPES[dataType].size
-			let fieldOffset = (offset -  baseOffset) % size
-			let fieldName = FILE_TYPES[dataType].fieldOffsets[fieldOffset]
-			
-			if (FILE_TYPES[dataType].typedef[fieldName] != "string" 
-				&& FILE_TYPES[dataType].typedef[fieldName] != "symbolAddr"
-				&& FILE_TYPES[dataType].typedef[fieldName] != "symbol") {
-				console.error(`Field ${fieldName} should be a string instead of ${FILE_TYPES[dataType].typedef[fieldName]} \
-(found in item ${Math.floor((offset - baseOffset) / size)}) ${DataType[dataType]} (0x${offset.toString(16)} / 0x${baseOffset.toString(16)})`)
-			}
-		}
-	}
-	
-	for (let i = 0; i < objects.length; i++) {
-		const obj = objects[i]
-		
-		let copy = {...obj}
-		Object.setPrototypeOf(copy, Object.getPrototypeOf(obj))
-		
-		for (const [fieldName, fieldType] of Object.entries(FILE_TYPES[dataType].typedef)) {
-			if (fieldType == "string") {
-				let fieldOffset = FILE_TYPES[dataType].fieldOffsets[fieldName] as number
-				let size = FILE_TYPES[dataType].size as number
-				let relocation: Relocation = relocationTable.get(fieldOffset + size * i + baseOffset)
-				
-				copy[fieldName] = stringSection.getStringAt(relocation ? relocation.targetOffset : Pointer.NULL)
-			} 
-			else if (fieldType == "symbol") {
-				let fieldOffset = FILE_TYPES[dataType].fieldOffsets[fieldName] as number
-				let size = FILE_TYPES[dataType].size as number
-				let relocation: Relocation = relocationTable.get(fieldOffset + size * i + baseOffset)
-				let targetSymbol = symbolTable[relocation?.infoHigh]
-				
-				// console.log('symbol', relocation?.infoHigh, symbolTable)
-				
-				copy[fieldName] = demangle(targetSymbol?.name) ?? null
-			} 
-			else if (fieldType == "symbolAddr") {
-				let fieldOffset = FILE_TYPES[dataType].fieldOffsets[fieldName] as number
-				let size = FILE_TYPES[dataType].size as number
-				let relocation: Relocation = relocationTable.get(fieldOffset + size * i + baseOffset)
-				copy[fieldName] = relocation ? relocation.targetOffset : Pointer.NULL
-			}
-		}
-		
-		result.push(copy)
-	}
-	
-	return result
 }
 
 function objFromReader(reader: BinaryReader, dataType: DataType): UuidTagged {

@@ -55,7 +55,7 @@ export function duplicateObjectInBinary<T extends object>(binary: ElfBinary, dat
 		let clone = {...obj}
 		Object.setPrototypeOf(clone, Object.getPrototypeOf(obj))
 		
-		clone[VALUE_UUID] = ValueUuid()
+		clone[VALUE_UUID] = ValueUuid(`cloned ${DataType[dataType]} ${clone[FILE_TYPES[dataType].identifyingField]}`)
 		
 		if (incrementId && FILE_TYPES[dataType].identifyingField == "id") {
 			// @ts-ignore
@@ -68,11 +68,6 @@ export function duplicateObjectInBinary<T extends object>(binary: ElfBinary, dat
 			
 			if (fieldType === "symbol" || fieldType === "symbolAddr" && fieldValue != null) {
 				const childDataType = FILE_TYPES[dataType].childTypes[fieldName]
-				const childObjectType = FILE_TYPES[childDataType].dataDivision
-				
-				if (!binary.data[childObjectType].includes(fieldValue)) {
-					throw new Error("Cannot clone object " + fieldValue + " because it doesn't exist in the binary")
-				}
 				
 				if (typeof fieldValue != "object" || !("symbolName" in fieldValue) || typeof fieldValue.symbolName != "string") {
 					throw new Error("Cannot clone object " + fieldValue + " because it's of an invalid type")
