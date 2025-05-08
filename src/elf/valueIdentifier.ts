@@ -13,3 +13,6 @@ export interface UuidTagged {
 export function ValueUuid(label: string) {
 	return Symbol(`UUID: ${label}`)
 }
+export function ValueUuids() {
+	return Symbol()
+}
