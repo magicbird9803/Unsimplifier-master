@@ -6,7 +6,7 @@ import { BinaryReader, Vector3 } from "./misc";
 import { Relocation, Section, Symbol } from "./types";
 import { ValueUuid, VALUE_UUID, DATA_TYPE, type UuidTagged, ValueUuids } from "./valueIdentifier";
 import { peekable, type Peekable } from "./util";
-import { demangle } from "./nameMangling";
+import { demangle, mangleIdentifier } from "./nameMangling";
 
 export class EmptyFileError extends Error {
 	constructor(message: any) {
@@ -60,7 +60,40 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 	// the relocation describes where the pointer should be stored in and where it points to (the section and offset)
 	// because the section it points to is very predictable, we can read the offset and store it in the original location of the pointer
 	
+	
 	let allRelocations = new Map<string, Map<number, Relocation>>()
+		function parseSymbol<T extends DataType>(containingSection: Section, stringSection: Section, symbol: Symbol, dataType: T, count?: number) {
+		// if count is smaller than zero, calculate size like normal and subtract negative value from it
+		let subtract = 0
+		
+		if (count < 0) {
+			subtract = Math.abs(count)
+			count = undefined
+		}
+		
+		count = count ?? symbol.size / FILE_TYPES[dataType].size - subtract
+		
+		return applyStrings(
+			symbol.location, dataType, stringSection, allRelocations.get(containingSection.name), symbolTable,
+			
+			parseRawDataSection(containingSection, count, symbol.location, dataType),
+		)
+	}
+	// find all sections that start with ".rela" (e.g. '.rela.data') because those contain the relocations
+	for (const section of sections) {
+		
+		if (section.name.startsWith(".rela")) {
+			let reader = new BinaryReader(section.content)
+			let relocations = new Map()
+			
+			while (reader.position < section.content.byteLength) {
+				let relocation = Relocation.fromBinaryReader(reader)
+				relocations.set(relocation.locationOffset.value, relocation)
+			}
+			
+			allRelocations.set(section.name.slice(".rela".length), relocations)
+		}
+	}
 	let allRelocationIters = new Map<string, Peekable<[number, Relocation]>>()
 	
 	// find all sections that start with ".rela" (e.g. '.rela.data') because those contain the relocations
@@ -128,7 +161,12 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 		states: Pointer
 		stateCount: number
 	}
-	
+	interface ModelInstance {
+		assetGroups: { symbolName: string, children: Instance<DataType.ModelAssetGroup>[] }
+		assetGroupCount: number
+		states: { symbolName: string, children: Instance<DataType.ModelState>[] }
+		stateCount: number
+	}
 
 	function parseModelRodata(datas: {[division in DataDivision]?: any[]},models: RawModelInstance[]) {
 		const rodataSection = findSection('.rodata')
@@ -302,11 +340,11 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 		return symbolTable.find(symbol => symbol.location.equals(location) && sections[symbol.sectionHeaderIndex] == section && symbol.info != 0)
 	}
 	
-	function createMissingSymbol(name: string, section: Section): Symbol {
+	function createMissingSymbol(name: string, section: Section): Symbol{
 		let symbol = new Symbol()
 		
 		// TODO: these values are only verified to be correct for data_btl's models
-		symbol.name = name
+		symbol.name = mangleIdentifier(name)
 		symbol.sectionHeaderIndex = sections.indexOf(section)
 		symbol.info = 1
 		symbol.visibility = 0
@@ -335,7 +373,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			let tableRelocs = peekable(allRelocations.get(".data"))
 			
 			let mainSymbol = findSymbol("wld::btl::data::s_Data")
-			let itemTables = parseSymbol(dataSection, stringSection, mainSymbol, DataType.ItemList, { count: -1, relocations: tableRelocs })
+			let itemTables = parseSymbol2(dataSection, stringSection, mainSymbol, DataType.ItemList, { count: -1, relocations: tableRelocs })
 
 			debugger
 			
@@ -346,7 +384,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 					continue
 				
 				let symbol = findSymbol(symbolName)
-				let children = parseSymbol(dataSection, stringSection, symbol, DataType.ListItem, { count: -1 })
+				let children = parseSymbol2(dataSection, stringSection, symbol, DataType.ListItem, { count: -1 })
 				
 				let items = {
 					symbolName,
@@ -378,7 +416,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			let tableRelocs = peekable(allRelocations.get(".data"))
 
 			let mainSymbol = findSymbol("wld::btl::data::s_Data")
-			let dropTables = parseSymbol(dataSection, stringSection, mainSymbol, DataType.HeartParam, { count: -1, relocations: tableRelocs })
+			let dropTables = parseSymbol2(dataSection, stringSection, mainSymbol, DataType.HeartParam, { count: -1, relocations: tableRelocs })
 
 			debugger
 
@@ -389,7 +427,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 					continue
 
 				let symbol = findSymbol(symbolName)
-				let children = parseSymbol(dataSection, stringSection, symbol, DataType.HeartItem, { count: -1 })
+				let children = parseSymbol2(dataSection, stringSection, symbol, DataType.HeartItem, { count: -1 })
 
 				let drops = {
 					symbolName,
@@ -414,13 +452,13 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			let headerRelocs = peekable(allRelocations.get(".data"))
 
 			let headerSymbol = findSymbol("wld::fld::data::maplink::s_mapLink")
-			let header = parseSymbol(dataSection, dataStringSection, headerSymbol, DataType.MaplinkHeader, { count: 1, relocations: headerRelocs })
+			let header = parseSymbol2(dataSection, dataStringSection, headerSymbol, DataType.MaplinkHeader, { count: 1, relocations: headerRelocs })
 			data.main = header
 
 			// maplink nodes
 			let { maplinks: symbolName, linkAmount } = header[0]
 			let maplinkSymbol = findSymbol(symbolName)
-			let maplinks = parseSymbol(dataSection, dataStringSection, maplinkSymbol, DataType.Maplink, { count: linkAmount })
+			let maplinks = parseSymbol2(dataSection, dataStringSection, maplinkSymbol, DataType.Maplink, { count: linkAmount })
 
 			let maplinkObj = {
 				symbolName,
@@ -442,13 +480,13 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			let headerRelocs = peekable(allRelocations.get(".data"))
 
 			let headerSymbol = findSymbol("snd::data::s_battleDataList")
-			let header = parseSymbol(dataSection, dataStringSection, headerSymbol, DataType.SndBattleHeader, { count: 1, relocations: headerRelocs })
+			let header = parseSymbol2(dataSection, dataStringSection, headerSymbol, DataType.SndBattleHeader, { count: 1, relocations: headerRelocs })
 			data.main = header
 
 			// maplink nodes
 			let { battletracks: symbolName, trackAmount } = header[0]
 			let sndbattleSymbol = findSymbol(symbolName)
-			let battletracks = parseSymbol(dataSection, dataStringSection, sndbattleSymbol, DataType.SndBattle, { count: trackAmount })
+			let battletracks = parseSymbol2(dataSection, dataStringSection, sndbattleSymbol, DataType.SndBattle, { count: trackAmount })
 
 			let trackObj = {
 				symbolName,
@@ -461,24 +499,235 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 			break
 		}
 
-		case DataType.DataMobjModel:{
+		case DataType.DataUi: {
+						const dataSection = findSection('.data')
+						const stringSection = findSection('.rodata.str1.1')
+						const rodataSection = findSection('.rodata')
+					
+						let rodataView = new DataView(dataSection.content)
+					
+						data = {}
+					
+						// models
+						let modelDataSymbol = findSymbol("wld::fld::data::s_uiModelData")
+						let models = parseSymbol(dataSection, stringSection, modelDataSymbol, DataType.UiModel, -1)
+						data.model = models
+					
+						// model properties
+						let modelProperties = []
+					
+						for (const model of models) {
+						const { properties: offset, propertyCount } = model
+						
+						if (offset == Pointer.NULL || offset == undefined) {
+						model.properties = null
+						continue
+						}
+						
+						let children = applyStrings(
+						offset, DataType.UiModelProperty, stringSection, 
+						allRelocations.get('.data'), symbolTable,
+							
+						parseRawDataSection(dataSection, propertyCount, offset, DataType.UiModelProperty), 
+						)
+						
+						let symbol = findSymbolAt(dataSection, offset) ?? createMissingSymbol(`wld::fld::data::^s_uiModelPropertyData_${model.id}`, dataSection)
+						
+						let properties = {
+						symbolName: demangle(symbol.name),
+						children,
+						}
+						
+						modelProperties.push(properties)
+						model.properties = properties
+						}
+					
+						data.modelProperty = modelProperties
+						// msg
+						let msgSymbol = findSymbol("wld::fld::data::s_uiMessageData")
+						let messages = parseSymbol(dataSection, stringSection, msgSymbol, DataType.UiMsg, -1)
+
+						data.msg = messages
 
 
+						// style
+						let styleSymbol = findSymbol("wld::fld::data::s_UIStyleData")
+						let styles = parseSymbol(dataSection, stringSection, styleSymbol, DataType.UiStyle, -1)
+						data.style = styles
+
+
+						// shop
+						let shopSymbol = findSymbol("wld::fld::data::s_UIShopData")
+						let shops = parseSymbol(dataSection, stringSection, shopSymbol, DataType.UiShop, -1)
+						data.shop = shops
+
+
+
+
+						// iconEntrys
+						let iconMapSymbol = findSymbol("wld::fld::data::s_UIIconData")
+						let iconEntries = parseSymbol(dataSection, stringSection, iconMapSymbol, DataType.UiIconMenu, -1)
+						data.iconEntry = iconEntries
+
+						
+						// mail data
+						let mailDataSymbol = findSymbol("wld::fld::data::s_UIMailData")
+						let mailEntries = parseSymbol(dataSection, stringSection, mailDataSymbol, DataType.UiMail, -1)
+						data.mailEntry = mailEntries
+
+
+						// map data
+						let seaMapSymbol = findSymbol("wld::fld::data::s_UIMapData")
+						let seaEntries = parseSymbol(dataSection, stringSection, seaMapSymbol, DataType.UiSeaMap, -1)
+						data.seaEntry = seaEntries
+
+
+						//Uranansi	
+						let uranaisiDataSymbol = findSymbol("wld::fld::data::s_UIUranaisiNextData")
+						let uranaisis = parseSymbol(dataSection, stringSection, uranaisiDataSymbol, DataType.UiUranaisi, -1)
+						data.uranaisi = uranaisis
+
+
+						//Shine	
+						let shinesDataSymbol = findSymbol("wld::fld::data::s_UIShineData")
+						let shines = parseSymbol(dataSection, stringSection, shinesDataSymbol, DataType.UiShine, -1)
+						data.shine = shines		
+						
+
+						//Starpiece	
+						let starpieceDataSymbol = findSymbol("wld::fld::data::s_UIStarpieceData")
+						let starpieces = parseSymbol(dataSection, stringSection, starpieceDataSymbol, DataType.UiStar, -1)
+						data.starpiece = starpieces	
+						
+
+						//Gallery Art	
+						let GalleryArtDataSymbol = findSymbol("wld::fld::data::s_UIGalleryArtData")
+						let galleryarts = parseSymbol(dataSection, stringSection, GalleryArtDataSymbol, DataType.UiGalleryArt, -1)
+						data.galleryart = galleryarts	
+						
+						//Gallery Sound	
+						let GallerySoundDataSymbol = findSymbol("wld::fld::data::s_UIGallerySoundData")
+						let gallerysounds = parseSymbol(dataSection, stringSection, GallerySoundDataSymbol, DataType.UiGallerySound, -1)
+						data.gallerysound = gallerysounds	
+		
+						//Ac Master	
+						let AcMasterDataSymbol = findSymbol("wld::fld::data::s_UIAcMasterData")
+						let acmasters = parseSymbol(dataSection, stringSection, AcMasterDataSymbol, DataType.UiAcMaster, -1)
+						data.acmaster = acmasters		
+						//Select Window	
+						let SelectWindowDataSymbol = findSymbol("wld::fld::data::s_UISelectWindowData")
+						let selectwindows = parseSymbol(dataSection, stringSection, SelectWindowDataSymbol, DataType.UiSelectwindow, -1)
+						data.selectwindow = selectwindows																			
+						break
+		}
+
+
+				case DataType.DataEffect: 	{
+					const dataStringSection = findSection('.rodata.str1.1')
+					const rodataSection = findSection('.rodata')
+					
+					let rodataView = new DataView(rodataSection.content)
+					
+					const categoryCountSymbol = findSymbol('eft::data::s_categoryCount')
+					const categoryCount = rodataView.getInt32(categoryCountSymbol.location.value, true)
+					
+					
+					// .data section exclusively contains an array of strings (category names)
+					// count of items in .data is determined by categoryCount Symbol
+					
+					// because it exclusively contains relocations, we can ignore data section completely
+					// and just focus on .rela.data
+					let categories: string[] = []
+					for (const [offset, relocation] of allRelocations.get('.data')) {
+						categories.push(dataStringSection.getStringAt(relocation.targetOffset))
+					}
+					
+					data = {}
+					data.category = categories
+					
+					
+					// .rodata contains actual main data (under symbol dataSymbol)
+					const dataCountSymbol = findSymbol("eft::data::s_dataCount")
+					const dataCount = rodataView.getInt32(dataCountSymbol.location.value, true)
+					
+					const dataSymbol = findSymbol("eft::data::s_data")
+					const dataObjects = applyStrings(
+						dataSymbol.location, dataType, dataStringSection,
+						allRelocations.get('.rodata'), symbolTable,
+						
+						parseRawDataSection(rodataSection, dataCount, dataSymbol.location.value, dataType), 
+					)
+					
+					data.main = dataObjects
+					
+					break
+			}		
+		case DataType.BgmData:{
+
+
+ {
+			const dataSection = findSection('.data')
+			const dataStringSection = findSection('.rodata.str1.1')
+			const rodataSection = findSection('.rodata')
+			
+			let countSymbolName = FILE_TYPES[dataType].countSymbol
+			let defaultPadding = FILE_TYPES[dataType].defaultPadding
+			let count: number
+			
+			if (countSymbolName != null) {
+				const dataView = new DataView(dataSection.content)
+				
+				let countSymbol = findSymbol("countSymbolName")
+				count = dataView.getBigInt64(countSymbol.location.value, true)
+			} else if (rodataSection != null) {
+				// the .rodata Section usually only contains 4 bytes, which are the amount of objects in .data
+				let rodataView = new DataView(rodataSection.content)
+				count = rodataView.getBigInt64(0, true)
+			} else {
+				count = dataSection.size / FILE_TYPES[dataType].size - defaultPadding
+			}
+			
+			data = {}
+			data.main = parseRange(dataSection, dataStringSection, 0, count, dataType)
+			
+			break
+		}
+
+
+		}
+
+
+		case DataType.DataBattleModel:
+		case DataType.DataGobjModel:
+		case DataType.DataItemModel:
+		case DataType.DataMobjModel:
+		case DataType.DataNpcModel:
+		case DataType.DataPlayerModel:
+			{
 
 			const dataSection = findSection('.data')
 			const rodataSection = findSection('.rodata')
 			const dataStringSection = findSection('.rodata.str1.1')
-			let count: number
-			
-			let rodataView = new DataView(rodataSection.content)
-			
+	
 			// object count in .data is stored somewhere in .rodata, at symbol wld::fld::data::modelNpc_num
 			// because of name mangling, this equals _ZN3wld3fld4dataL12modelNpc_numE
 
+			const rodataView = new DataView(rodataSection.content)
+			let count: number
+			let countSymbolName = FILE_TYPES[dataType].countSymbol
+			let defaultPadding = FILE_TYPES[dataType].defaultPadding				
+			if (countSymbolName != null) {
 				const dataView = new DataView(rodataSection.content)
 				
-				let mainSymbol = findSymbol("wld::fld::data::modelMobj_num")
-				count = dataView.getBigInt64(mainSymbol.location.value, true)
+				let countSymbol = findSymbol(countSymbolName)
+				count = dataView.getBigInt64(countSymbol.location.value, true)
+			} else if (rodataSection != null) {
+				// the .rodata Section usually only contains 4 bytes, which are the amount of objects in .data
+				let rodataView = new DataView(rodataSection.content)
+				count = rodataView.getBigInt64(0, true)
+			} else {
+				count = rodataSection.size / FILE_TYPES[dataType].size - defaultPadding
+			}
 			
 			data = {}
 			data.main = applyStrings(
@@ -536,7 +785,7 @@ export default function parseElfBinary(dataType: DataType, arrayBuffer: ArrayBuf
 		relocations?: Peekable<[number, Relocation]>
 	}
 	
-	function parseSymbol<T extends DataType>(section: Section, stringSection: Section, symbol: Symbol, dataType: T, properties?: ParseSymbolProps) {
+	function parseSymbol2<T extends DataType>(section: Section, stringSection: Section, symbol: Symbol, dataType: T, properties?: ParseSymbolProps) {
 		let { count, relocations } = properties
 		
 		// if count is smaller than zero, calculate size like normal and subtract negative value from it
@@ -699,23 +948,9 @@ function applyRelocations<T extends DataType>(obj: Instance<T>, offset: number,
 	}
 }
 
-function parseSymbol2<T extends DataType>(containingSection: Section, stringSection: Section, symbol: Symbol, dataType: T, count?: number) {
-	// if count is smaller than zero, calculate size like normal and subtract negative value from it
-	let subtract = 0
-	
-	if (count < 0) {
-		subtract = Math.abs(count)
-		count = undefined
-	}
-	
-	count = count ?? symbol.size / FILE_TYPES[dataType].size - subtract
-	
-	return applyStrings(
-		symbol.location, dataType, stringSection, allRelocations.get(containingSection.name), symbolTable,
-		
-		parseRawDataSection(containingSection, count, symbol.location, dataType),
-	)
-}
+
+
+
 
 
 function parseRawDataSection(section: Section, count: number, initialPosition: number | Pointer, dataType: DataType): UuidTagged[] {
@@ -739,7 +974,7 @@ function parseRawDataSection(section: Section, count: number, initialPosition: n
 			[DATA_TYPE]: dataType,
 		}
 		
-		for (let [fieldName, fieldType] of Object.entries(FILE_TYPES[dataType].typedef)) {
+		for (const [fieldName, fieldType] of Object.entries(FILE_TYPES[dataType].typedef)) {
 			
 			switch (fieldType) {
 				case "string":
@@ -792,6 +1027,7 @@ function parseRawDataSection(section: Section, count: number, initialPosition: n
 	}
 }
 
+
 function applyStrings<T extends DataType>(baseOffsetPointer: Pointer, dataType: T, stringSection: Section, 
 	relocationTable: Map<number, Relocation>, symbolTable: Symbol[], objects: UuidTagged[]): Instance<T>[] {
 	
@@ -812,6 +1048,7 @@ function applyStrings<T extends DataType>(baseOffsetPointer: Pointer, dataType: 
 (found in item ${Math.floor((offset - baseOffset) / size)}) ${DataType[dataType]} (0x${offset.toString(16)} / 0x${baseOffset.toString(16)})`)
 			}
 		}
+	}
 	
 	for (let i = 0; i < objects.length; i++) {
 		const obj = objects[i]
@@ -850,4 +1087,6 @@ function applyStrings<T extends DataType>(baseOffsetPointer: Pointer, dataType: 
 	
 	return result
 }
-}
+
+
+	

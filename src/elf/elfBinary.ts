@@ -48,6 +48,26 @@ export const dataDivisions = {
 	// maplink
 	links: "links",
 
+	model: "model",
+	modelProperty: "modelProperty",
+	msg: "msg",
+	style: "style",
+	shop: "shop",
+	sellItem: "sellItem",
+	iconEntry: "iconEntry",
+	mailEntry: "mailEntry",
+	seaEntry:	"seaEntry",
+	uranaisi: "uranaisi",
+	starpiece: "starpiece",
+	shine: "shine",
+	galleryart: "galleryart",
+	gallerysound: "gallerysound",
+	acmaster: "acmaster",
+	selectwindow: "selectwindow",
+	menu: "menu",
+	announcement: "announcement",
+	announcementExclude: "announcementExclude",	
+
 	// sound
 	tracks: "tracks",
 } as const

@@ -116,7 +116,7 @@ export class BinaryReader {
 		return value
 	}
 	
-    readBigInt64(): bigint {
+    readBigInt64(): number {
 		let value = this.dataView.getBigInt64(this.position, this.littleEndian)
 		this.position += 8
 		return value

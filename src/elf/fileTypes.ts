@@ -110,11 +110,12 @@ interface DataTypeMetadata {
 	defaultPadding?: number
 	countSymbol?: string
 	mainSymbol?: string
-	nestedAllValues?: boolean
 	
-	childTypes?: Typedef<DataType>,
+	childTypes?: Typedef<DataType>
 	childFieldLabel?: string
-	childField?: string	
+	childField?: string
+	nestedAllValues?: boolean
+	entryPoints?: {[objectType: number]: any}
 	// for future sub-types
 	// childField
 	// childFieldLabel
@@ -687,6 +688,66 @@ Specifies the type of the item. Possible values:
 			romfsPath: "data/character/data_character_item.elf.zst",
 		},
 	},
+	[DataType.DataEffect]: {
+		__: {
+
+			displayName: "Effect Type",
+		},
+		
+		id: "string",
+		emitterSetName: new Property("string", `
+The name of the emitter set found in the effect folder inside the ptcl files.
+might be the interaction function (called when pressing A; similar to talking).`),
+		field_0x10: "int",
+		field_0x14: "int",
+		field_0x18: "string",
+		field_0x20: "string",
+		field_0x28: "string",
+		field_0x30: "string",
+		field_0x38: "string",
+		field_0x40: "int",
+		field_0x44: "int",
+		field_0x48: "int",
+		field_0x4c: "int",
+		field_0x50: "int",
+		field_0x54: "int",
+		field_0x58: "int",
+		field_0x5c: "int",
+		field_0x60: "int",
+		field_0x64: "int",
+		field_0x68: "int",
+		field_0x6c: "float",
+		field_0x70: "float",
+		field_0x74: "float",
+		field_0x78: "int",
+		field_0x7c: "int",
+		field_0x80: "int",
+		field_0x84: "int",
+		field_0x88: "int",
+		field_0x8c: "int",
+		field_0x90: "int",
+		field_0x94: "int",
+	},
+	[DataType.BgmData]: {
+		__: {
+			displayName: "BGM List",
+			countSymbol: "snd::data::s_voiceData"
+		},
+
+		id: "string",
+		player: "string",
+		bgmIntroMario: "string",
+		bgmIntroEnemy: "string",
+		bgmMain: "string",
+		bgmThink: "string",
+		bgmWin: "string",
+		bgmWin2: "string",
+		field_0x48: "string",
+		field_0x50: "string",
+		field_0x58: "string",
+		field_0x60: "string",
+	},	
+
 	[DataType.SndBattle]: {
 		__: {
 			displayName: "Battle BGM List",
@@ -1566,57 +1627,6 @@ Specifies the type of the item. Possible values:
 		field_0x28: "int",
 		field_0x2c: "int",
 	},
-	[DataType.DataNpcModel]: {
-		__: {
-			displayName: "NPC Models",
-			mainSymbol: "wld::fld::data::s_modelNpc",
-			countSymbol: "wld::fld::data::modelNpc_num",
-			childTypes: {
-				assetGroups: DataType.ModelAssetGroup,
-				states: DataType.ModelState,
-            },
-		},
-
-		id: "string",
-		field_0x8: new Property("Vector3", "Usage unknown, but one guess would be scale? Please verify."),
-		field_0x14: "short",
-		field_0x16: "short",
-		field_0x18: "short",
-		field_0x1A: "short",
-		field_0x1c: "int",
-		field_0x20: "int",
-		field_0x24: "int",
-		field_0x28: "int",
-		field_0x2c: "int",
-		field_0x30: "int",
-		field_0x34: "int",
-		field_0x38: "float",
-		field_0x3c: "float",
-		field_0x40: "float",
-		field_0x44: "int",
-		field_0x48: "int",
-		field_0x4c: "int",
-		field_0x50: "int",
-		field_0x54: "float",
-		field_0x58: "float",
-		field_0x5c: "float",
-		field_0x60: "float",
-		field_0x64: "float",
-		field_0x68: "int",
-		field_0x6c: "float",
-		field_0x70: "float",
-		field_0x74: "float",
-		assetGroup: new Property("string", undefined, {
-			tabName: "Asset Groups for {type} {id}"
-		}),
-		assetGroupCount: new Property("int", undefined, { hidden: true }),
-		field_0x84: "int",
-		states: new Property("string", undefined, {
-			tabName: "States for {type} {id}",
-		}),
-		stateCount: new Property("int", undefined, { hidden: true }),
-		field_0x94: "int",
-	},
 	[DataType.ModelType]: {
 		__:{
 			dataDivision: dataDivisions.main,
@@ -1669,16 +1679,14 @@ Specifies the type of the item. Possible values:
 		field_0x94: "int",
 		
 	},
-
-
 	[DataType.ModelAssetGroup]: {
 		__: {
-
 			displayName: "Asset Group",
-			identifyingField: "fileName",
+			importantField: "fileName",
 			nestedAllValues: true,
-			dataDivision: dataDivisions.assetGroup,
+			objectType: dataDivisions.assetGroup,
 		},
+
 		modelFolder: "string",
 		fileName: "string",
 		field_0x10: "int",
@@ -1711,7 +1719,7 @@ Some commonly found translations:
 			tabName: "SubStates for {type} {id}",
 		}),
 		substateCount: new Property("int", undefined, {hidden: false}),
-		field_0x14: new Property("string", undefined, {hidden: false}),
+		field_0x14: new Property("int", undefined, {hidden: false}),
 	},
 	[DataType.ModelFaceGroup]: {
 		__: {
@@ -1766,9 +1774,19 @@ Some commonly found translations:
 		description: "string",
 		id: "string",
 	},	
+
+	[DataType.DataNpcModel]: {
+		__: {
+			parent: DataType.ModelType,
+			mainSymbol: "wld::fld::data::s_modelNpc",
+			countSymbol: "wld::fld::data::modelNpc_num",
+			displayName: "NPC Models",
+			romfsPath: "data/model/data_model_npc.elf.zst",
+		},	
+	},
 	[DataType.DataPlayerModel]: {
 		__: {
-			parent: DataType.DataNpcModel,
+			parent: DataType.ModelType,
 			mainSymbol: "wld::fld::data::s_modelPlayer",
 			countSymbol: "wld::fld::data::modelPlayer_num",
 			displayName: "Player Models",
@@ -1777,7 +1795,7 @@ Some commonly found translations:
 	},
 	[DataType.DataItemModel]: {
 		__: {
-			parent: DataType.DataNpcModel,
+			parent: DataType.ModelType,
 			mainSymbol: "wld::fld::data::s_modelItem",
 			countSymbol: "wld::fld::data::modelItem_num",
 			displayName: "Item Models",
@@ -1787,8 +1805,6 @@ Some commonly found translations:
 	[DataType.DataMobjModel]: {
 		__: {
 			parent: DataType.ModelType,
-			dataDivision: dataDivisions.main,
-
 			mainSymbol: "wld::fld::data::s_modelMobj",
 			countSymbol: "wld::fld::data::modelMobj_num",
 			displayName: "Mobj Models",
@@ -1797,23 +1813,356 @@ Some commonly found translations:
 	},
 	[DataType.DataGobjModel]: {
 		__: {
-			parent: DataType.DataNpcModel,
+			parent: DataType.ModelType,
 			mainSymbol: "wld::fld::data::s_modelGobj",
 			countSymbol: "wld::fld::data::modelGobj_num",
 			displayName: "Gobj Models",
 			romfsPath: "data/model/data_model_gobj.elf.zst",
 		},
 	},
-
 	[DataType.DataBattleModel]: {
 		__: {
-			parent: DataType.DataNpcModel,
+			parent: DataType.ModelType,
 			mainSymbol: "wld::fld::data::s_modelBattle",
 			countSymbol: "wld::fld::data::modelBattle_num",
 			displayName: "Battle Models",
 			romfsPath: "data/model/data_model_battle.elf.zst",
 		},
 	},
+
+	[DataType.DataUi]: {},
+	[DataType.UiModel]: {
+		__: {
+			displayName: "Model",
+			dataDivision: dataDivisions.model,
+			childTypes: {
+				properties: DataType.UiModelProperty,
+			},
+		},	
+		id: "string",
+		modelFolder: "string",
+		modelFileName: new Property("string", `
+Not sure what this is for. It seems like it's the same as \`id\`.`),
+		properties: new Property("symbolAddr", undefined, {tabName: "Model Properties of {id}"}),
+		propertyCount: new Property("int", undefined, {hidden: true}),
+		field_0x24: "int",
+	},
+	[DataType.UiModelProperty]: {
+		__: {
+
+		displayName: "Model Property",
+		dataDivision: dataDivisions.modelProperty,
+		nestedAllValues: true,
+		},	
+
+		id: "string",
+		model: "string",
+		field_0x10: "string",
+		field_0x18: "int",
+		field_0x1c: "int",
+		field_0x20: "float",
+		field_0x24: "int",
+		field_0x28: "string",
+		field_0x30: "string",
+		field_0x38: "int",
+		field_0x3c: "int",
+	},
+	[DataType.UiMsg]: {
+		__: {
+
+		displayName: "Message",
+		dataDivision: dataDivisions.msg,
+	},	
+		
+		id: "string",
+		modelAsset: "string",
+		WdwIn: "string",
+		WdwOut: "string",
+		field_0x20: "string",
+		openWindow: "string",
+		field_0x3c: "string",
+		openSfx: "string",
+		closeSfx: "string",
+		field_0x40: "string",
+		field_0x44: "string",
+		field_0x48: "string",
+		field_0x4c: "int",
+		field_0x50: "int",
+		field_0x54: "int",
+		field_0x58: "string",
+		field_0x5c: "int",
+		field_0x60: "int",
+		field_0x64: "int",
+		field_0x68: "int",
+		field_0x6c: "int",
+		field_0x70: "string",
+		field_0x78: "int",
+		field_0x7c: "int",
+	},
+
+	[DataType.UiStyle]: {
+		__: {
+
+		displayName: "Message",
+		dataDivision: dataDivisions.style,
+	},	
+
+		id: "string",
+		modelAsset: "string",
+		field_0x10: "int",
+		field_0x18: "int",
+		field_0x20: "int",
+		openSfx: "string",
+		closeSfx: "string",
+		field_0x38: "int",
+		field_0x3c: "int",
+		field_0x40: "int",
+		field_0x44: "int",
+		field_0x48: "int",
+		field_0x4c: "int",
+		field_0x50: "int",
+		field_0x54: "int",
+		field_0x58: "int",
+		field_0x5c: "int",
+		field_0x60: "int",
+		field_0x64: "int",
+		field_0x68: "int",
+		field_0x6c: "int",
+		field_0x70: "int",
+		field_0x78: "int",
+		field_0x7c: "int",
+	},
+
+	
+	[DataType.UiShop]: {
+		__: {
+
+			displayName: "Shop",
+			dataDivision: dataDivisions.shop,
+			childTypes: {
+			soldItems: DataType.UiShop,
+				},
+		},		
+		
+		id: "string",
+		group: "string",
+		itemGiven: "int",
+		field_0x14: "int",
+	},
+
+	
+	[DataType.UiIconMenu]: {
+		__: {
+
+		displayName: "Map Entry",
+		dataDivision: dataDivisions.iconEntry,
+		},
+		id: "string",
+		group: "string",
+
+	},
+
+	[DataType.UiMail]: {
+		__: {
+
+		displayName: "Mail Entry",
+		dataDivision: dataDivisions.mailEntry,
+		},
+		id: "string",
+		field_0x38: "string",
+		field_0x3c: "string",
+		field_0x40: "string",
+		field_0x48: "string",
+		field_0x4c: "string",
+		field_0x50: "string",
+
+	},
+	
+	[DataType.UiMenu]: {
+		__: {
+
+		displayName: "Menu",
+		dataDivision: dataDivisions.menu,
+		},
+		stage: "string",
+		id: "string",
+		field_0x10: "string",
+		field_0x18: "int",
+		field_0x1c: "int",
+		field_0x20: "string",
+		field_0x28: "string",
+		field_0x30: "string",
+		field_0x38: "string",
+		field_0x40: "string",
+		field_0x48: "string",
+		field_0x50: "string",
+		field_0x58: "string",
+		field_0x60: "string",
+		field_0x68: "string",
+		field_0x70: "string",
+		field_0x78: "string",
+		field_0x80: "string",
+		field_0x88: "string",
+		field_0x90: "string",
+		field_0x98: "string",
+		field_0xa0: "string",
+		field_0xa8: "string",
+		field_0xb0: "string",
+		field_0xb8: "string",
+		field_0xc0: "string",
+		field_0xc8: "string",
+		field_0xd0: "string",
+		field_0xd8: "string",
+		field_0xe0: "string",
+		field_0xe8: "string",
+		field_0xf0: "string",
+		field_0xf8: "string",
+		field_0x100: "string",
+		field_0x108: "string",
+		field_0x110: "string",
+		field_0x118: "string",
+		field_0x120: "string",
+		field_0x128: "string",
+		field_0x130: "string",
+		field_0x138: "string",
+		field_0x140: "string",
+		field_0x148: "string",
+		field_0x150: "string",
+		field_0x158: "string",
+		field_0x160: "string",
+		field_0x168: "string",
+		field_0x170: "string",
+		field_0x178: "string",
+	},
+
+		
+	[DataType.UiSeaMap]: {
+		__: {
+
+		displayName: "Map Entry",
+		dataDivision: dataDivisions.seaEntry,
+		},
+		id: "string",
+		group: "string",
+		field_0x38: "string",
+		field_0x40: "string",
+		
+	},
+
+
+	[DataType.UiUranaisi]: {
+		__: {
+
+		displayName: "Uranaisi",
+		dataDivision: dataDivisions.uranaisi,
+		},
+		id: "string",
+		group: "string",
+		field_0x38: "string",
+		
+	},
+	
+	[DataType.UiStar]: {
+		__: {
+
+		displayName: "Star Exclude",
+		dataDivision: dataDivisions.starpiece,
+		},	
+		id: "string",
+		type: "string",
+		group: "string",
+		field_0x8: "string",
+		field_0xc: "string",
+
+
+	},
+
+	[DataType.UiShine]: {
+		__: {
+
+		displayName: "Shine Exclude",
+		dataDivision: dataDivisions.shine,
+		},	
+		id: "string",
+		type: "string",
+		group: "string",
+		field_0x8: "string",
+		field_0xc: "string",
+
+
+	},
+
+	[DataType.UiGalleryArt]: {
+		__: {
+
+		displayName: "Art Exclude",
+		dataDivision: dataDivisions.galleryart,
+		},	
+		id: "string",
+		group: "string",
+		field_0x38: "string",
+		field_0x40: "string",
+
+	
+	},
+	
+	[DataType.UiGallerySound]: {
+		__: {
+
+		displayName: "Sound Exclude",
+		dataDivision: dataDivisions.gallerysound,
+		},	
+		id: "string",
+		group: "string",
+		field_0x38: "string",
+		field_0x3c: "string",
+		field_0x40: "string",
+		field_0x48: "string",
+		field_0x4c: "string",
+
+
+	
+	},
+
+	[DataType.UiAcMaster]: {
+		__: {
+
+		displayName: "Ac Exclude",
+		dataDivision: dataDivisions.acmaster,
+		},	
+		id: "string",
+		group: "string",
+		field_0x38: "string",
+		field_0x3c: "string",
+		field_0x40: "string",
+		field_0x48: "string",
+		field_0x4c: "string",
+
+
+	
+	},
+	[DataType.UiSelectwindow]: {
+		__: {
+
+		displayName: "Select Window Exclude",
+		dataDivision: dataDivisions.selectwindow,
+		},	
+		id: "string",
+		field_0x30: "string",
+		Wdwtitle: "string",
+		field_0x38: "string",
+		field_0x3c: "string",
+		WdwSelect: "string",
+		BtnSelect: "string",
+		text: "string",
+		field_0x50: "string",
+		WdwId: "string",
+		Scroll: "string",
+		field_0x5c: "string",
+		field_0x60: "string",
+
+	},
+
 } as const satisfies {[dataType: number]: TypeDefinition}
 
 

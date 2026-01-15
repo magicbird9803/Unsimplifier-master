@@ -18,6 +18,7 @@ export enum DataType {
 	CharacterParty,
 	CharacterItem,
 	CharacterAobj,
+	DataEffect,
 	
 	MapId,
 	ItemList,
@@ -25,7 +26,7 @@ export enum DataType {
 	EventFlag,
 
 	SndBattle,
-
+	BgmData,
 	//parameters
 	ParamActionBalloon,
 	ParamFade,
@@ -66,7 +67,7 @@ export enum DataType {
 	DataNpcModel,
 	DataPlayerModel,
 
-
+	DataUi,
 
 	// this is the end of the actual file types and start of sub types
 	TypeAmount,
@@ -78,6 +79,25 @@ export enum DataType {
 	ModelFaceGroup,
 	ModelFace,
 	ModelAnimation,
+
+	UiIcon,
+	UiStyle,
+	UiModel,
+	UiModelProperty,
+	UiMsg,
+	UiShop,
+	UiSellItem,
+	UiIconMenu,
+	UiMail,
+	UiSeaMap,
+	UiMenu,
+	UiUranaisi,
+	UiStar,
+	UiShine,
+	UiGalleryArt,
+	UiGallerySound,
+	UiAcMaster,
+	UiSelectwindow,
 
 	
 	MaplinkHeader,

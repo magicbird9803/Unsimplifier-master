@@ -40,6 +40,8 @@
   "data_model_mobj": DataType.DataMobjModel,
   "data_model_gobj": DataType.DataGobjModel,
   "data_model_battle": DataType.DataBattleModel,
+  "data_effect": DataType.DataEffect,
+  "data_sound_BGM": DataType.BgmData,
   "data_sndBattle": DataType.SndBattle,
   "data_param_actionballoon": DataType.ParamActionBalloon,
   "data_param_fade": DataType.ParamFade,
@@ -67,6 +69,7 @@
   "data_battle_weaponac_mario_ac": DataType.BattleWeaponAcMarioAc,
   "data_battle_weaponac_party_ac": DataType.BattleWeaponAcPartyAc,
   "data_battle_audiencekind": DataType.BattleAudienceKind,
+	"data_ui": DataType.DataUi,
   }
 
   onMount(() => {
@@ -128,13 +131,18 @@
     <option value="DataMobjModel">Mobj Models (data_model_mobj)</option>
     <option value="DataGobjModel">Gobj Models (data_model_gobj)</option>
     <option value="DataBattleModel">Battle Models (data_model_battle)</option>
+		<option value="DataEffect">Effect Registry (data_effect)</option>
 
+    <option value="BgmData">Battle BGM Registry (data_sound_BGM)</option>
     <option value="SndBattle">Battle BGM Registry (data_sndBattle)</option>
 
     <option value="EventFlag">Event Flags (EventFlg)</option>
     <option value="MapItemLotTable">Map Item Lot Table (data_map_itemlottable)</option>
     <option value="MapId">Map Registry (MapId)</option>
 		<option value="ItemList">Battle Item RNG Table (ItemList)</option>
+
+		<option value="DataUi">User Interface Registry (data_ui)</option>
+    
 
     <option value="ParamActionBalloon">Action Balloon Parameters (data_param_actionballoon)</option>
     <option value="ParamFade">Screen Transitions (data_param_fade)</option>
